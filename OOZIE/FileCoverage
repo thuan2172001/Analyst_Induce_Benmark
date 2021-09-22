@@ -1,4 +1,4 @@
-BugId	InduceId	#FixedFile	#InducedFiles	#Fixed File that Covered by Induced Files
+BugId	InduceId	#FixedFile	#InducedFiles	#Fixed-File-that-Covered-by-Induced-Files
 OOZIE-969	OOZIE-914	1	59	1
 OOZIE-609	OOZIE-480	1	2	1
 OOZIE-3315	OOZIE-2942	1	3	1

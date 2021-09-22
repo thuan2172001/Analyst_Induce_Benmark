@@ -1,4 +1,4 @@
-BugId	InduceId	#FixedFile	#InducedFiles	#Fixed File that Covered by Induced Files
+BugId	InduceId	#FixedFile	#InducedFiles	#Fixed-File-that-Covered-by-Induced-Files
 ACCUMULO-4674	ACCUMULO-4596	2	3	0
 ACCUMULO-4381	ACCUMULO-4353	1	29	1
 ACCUMULO-4372	ACCUMULO-4153	1	1	1

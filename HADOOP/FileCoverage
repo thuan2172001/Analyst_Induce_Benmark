@@ -1,4 +1,4 @@
-BugId	InduceId	#FixedFile	#InducedFiles	#Fixed File that Covered by Induced Files
+BugId	InduceId	#FixedFile	#InducedFiles	#Fixed-File-that-Covered-by-Induced-Files
 HADOOP-9981		1	6	0
 HADOOP-9887		1	3	1
 HADOOP-9865		1	3	1

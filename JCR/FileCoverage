@@ -1,4 +1,4 @@
-BugId	InduceId	#FixedFile	#InducedFiles	#Fixed File that Covered by Induced Files
+BugId	InduceId	#FixedFile	#InducedFiles	#Fixed-File-that-Covered-by-Induced-Files
 JCR-892	JCR-367	4	11	0
 JCR-4149	JCR-4115	1	4	1
 JCR-4118	JCR-3115	1	5	1

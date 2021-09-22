@@ -1,4 +1,4 @@
-BugId	InduceId	#FixedFile	#InducedFiles	#Fixed File that Covered by Induced Files
+BugId	InduceId	#FixedFile	#InducedFiles	#Fixed-File-that-Covered-by-Induced-Files
 SOLR-9596		1	9	0
 SOLR-9549		1	13	0
 SOLR-9536		1	16	1
