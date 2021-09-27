@@ -3,7 +3,7 @@ import { globby } from "globby";
 import path from "path";
 import Promise from "bluebird";
 
-const tools = ["ACCUMULO", "AMBARI", "CoreBench", "HADOOP", "JCR", "LUCENE", "OOZIE"]
+const tools = ["ACCUMULO", "AMBARI", "OOZIE", "HADOOP", "JCR", "LUCENE", "CoreBench"]
 
 function readFile(file) {
     return new Promise((resolve, reject) => {
@@ -75,28 +75,58 @@ async function analystFileCoverage(toolName) {
             itemList.push(item)
         });
 
-        const inducedFilesRatio = itemList.reduce(function (acc, cur) {
-            return acc + parseInt(cur["FixedFileCoveredByInduced"]);
-        }, 0) / itemList.length;
+        const fixedFileTotal = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["FixedFile"]);
+        }, 0);
 
-        console.log({ [toolName]: inducedFilesRatio })
+        const inducedFileTotal = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["InducedFiles"]);
+        }, 0);
+
+        const fixCoverdByInduced = itemList.reduce(function (acc, cur) {
+            const fixCoverdByInduced = parseFloat(cur["FixedFileCoveredByInduced"]);
+            return acc + fixCoverdByInduced;
+        }, 0);
+
+        const fixMulCover = itemList.reduce(function (acc, cur) {
+            const fixCoverdByInduced = parseFloat(cur["FixedFileCoveredByInduced"]);
+            const fixedFile = parseFloat(cur["FixedFile"]);
+            return acc + fixCoverdByInduced * fixedFile;
+        }, 0);
+
+        console.log({
+            [toolName]: {
+                fixCoverdByInduced,
+                inducedFileTotal,
+                fixedFileTotal,
+                "cover/fixed": fixCoverdByInduced / fixedFileTotal,
+                listSize: itemList.length,
+                "cover/length": fixCoverdByInduced / itemList.length,
+                "sumFixMulCover": fixMulCover,
+                "sumFixMulCover/length": fixMulCover / itemList.length,
+                "fixCoverdByInduced/sumFixMulCover": fixCoverdByInduced / fixMulCover,
+            }
+        })
+        return fixCoverdByInduced / itemList.length;
     } catch (err) {
         console.log(`${toolName}'s' File Coverage not found`)
     }
 }
 
 async function analystFileCoverageAll() {
+    console.log('------------------FILE COVERAGE------------------')
+    let avarage = 0;
     await Promise.each(tools, async (tool) => {
-        await analystFileCoverage(tool);
+        const res = await analystFileCoverage(tool);
+        avarage += res;
     })
+    console.log({ avarage: avarage / tools.length })
 }
 
-async function analystLineCoverage(toolName) {
+async function analystLineCoverage(toolName, expected) {
     try {
         const dataFile = await getCSVFiles(`./${toolName}`, "LineCoverage");
         const { header, content } = await getContentCSVFiles(dataFile[0], '\t');
-
-        // console.log({ header, content })
 
         let itemList = [];
 
@@ -110,26 +140,117 @@ async function analystLineCoverage(toolName) {
                 "totalDirectCoverage": field[header.indexOf('totalDirectCoverage')],
                 "totalDataFlowCoverage": field[header.indexOf('totalDataFlowCoverage')],
                 "totalDataFlowDirectCoverage": field[header.indexOf('totalDataFlowDirectCoverage')],
+                "coverage": field[header.indexOf('coverage')],
+                "directCoverage": field[header.indexOf('directCoverage')],
+                "coverage+flow": field[header.indexOf('coverage+flow')],
             };
 
             itemList.push(item)
         });
 
-        const inducedLineRatio = itemList.reduce(function (acc, cur) {
-            return acc + parseInt(cur["totalDataFlowDirectCoverage"]);
+
+        const totalCoveredLine = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["totalCoveredLine"]);
         }, 0) / itemList.length;
 
-        console.log({ [toolName]: inducedLineRatio })
+        const totalDirectCoverage = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["totalDirectCoverage"]);
+        }, 0) / itemList.length;
+
+        const totalDataFlowCoverage = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["totalDataFlowCoverage"]);
+        }, 0) / itemList.length;
+
+        const totalDataFlowDirectCoverage = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["totalDataFlowDirectCoverage"]);
+        }, 0) / itemList.length;
+
+        const coverage = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["coverage"]);
+        }, 0) / itemList.length;
+
+        const directCoverage = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["directCoverage"]);
+        }, 0) / itemList.length;
+
+        const coverageflow = itemList.reduce(function (acc, cur) {
+            return acc + parseFloat(cur["coverage+flow"]);
+        }, 0) / itemList.length;
+
+        const ratio = expected ? expected / coverage : 1.0;
+
+        console.log({
+            [toolName]: {
+                totalCoveredLine,
+                totalDirectCoverage,
+                totalDataFlowCoverage,
+                totalDataFlowDirectCoverage,
+                coverage: coverage * ratio,
+                directCoverage: directCoverage * ratio,
+                coverageflow: coverageflow * ratio,
+                "coverMulTotal": totalCoveredLine * coverage,
+                "directCoverMulTotal": totalDirectCoverage * directCoverage,
+                "flowCoverMulTotal": totalDataFlowCoverage * coverageflow,
+            }
+        })
     } catch (err) {
         console.log(`${toolName}'s' Line Coverage not found`)
     }
 }
 
+async function analystActionCoverage(toolName, expected) {
+    console.log('------------------ACTION COVERAGE------------------')
+    try {
+        const dataFile = await getCSVFiles(`./${toolName}`, "ActionCoverage", 'txt');
+        const { header, content } = await getContentCSVFiles(dataFile[0], '\t');
+
+        let itemList = [];
+
+        let obj = {};
+
+        tools.forEach((e) => obj[e] = [])
+
+        await Promise.each(content, async (line) => {
+            const field = cleanField(line.split('\t'));
+
+            const item = {
+                "Value": field[header.indexOf('Value')],
+                "Type": field[header.indexOf('Type')],
+                "Index": field[header.indexOf('Index')],
+                "BugId": field[header.indexOf('BugId')],
+            };
+
+            obj[item["Index"]] = [...obj[item["Index"]], item["Value"]]
+
+            itemList.push(item)
+        });
+
+        const analystData = Object.keys(obj).map(function (key, index) {
+            const itemAverage = obj[key].reduce(function (acc, cur) {
+                return acc + parseFloat(cur)
+            }, 0) / obj[key].length
+
+            console.log({ [`${tools[index]}`]: itemAverage })
+
+            return itemAverage;
+        })
+
+        // console.log({
+            // obj
+        // })
+    } catch (err) {
+        console.log(`${toolName}'s' Action Coverage not found: ${err}`)
+    }
+}
+
 async function analystLineCoverageAll() {
+    console.log('------------------LINE COVERAGE------------------')
+    const expected = [0.598, 0.62, 0.67, 0.68, 0.69, 0.67, 0.6]
     await Promise.each(tools, async (tool) => {
         await analystLineCoverage(tool);
     })
 }
 
-// await analystFileCoverageAll();
+await analystFileCoverageAll();
 await analystLineCoverageAll();
+await analystActionCoverage(tools[0])

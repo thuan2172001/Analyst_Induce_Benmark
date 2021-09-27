@@ -1,4 +1,4 @@
-BugId	InduceId	#FixedFile	#InducedFiles
+BugId	#FixedFile	#InducedFiles	#Fixed-File-that-Covered-by-Induced-Files
 AMBARI-9367	2	3	0.5
 AMBARI-8867	1	2	0
 AMBARI-6271	2	0	0

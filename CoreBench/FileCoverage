@@ -1,4 +1,4 @@
-Bug ID	Fixed Files	Covered Files	File Coverage
+Bug ID	#FixedFile	#InducedFiles	#Fixed-File-that-Covered-by-Induced-Files
 make_1	1	1	1
 make_2	1	1	1
 make_3	7	7	1
