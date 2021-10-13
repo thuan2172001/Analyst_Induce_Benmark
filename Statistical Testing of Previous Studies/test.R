@@ -24,12 +24,12 @@ statisticalTest <- function() {
       result2 = cohen.d(szz, oracle)
       #d = (c(szz, oracle))
       #f = (c(rep("AG-SZZ",length(szz)),rep("Oracle",length(oracle))))
-      cat(result$p.value, " ", abs(result2$estimate), " \n")
+      cat(result$p.value, ";", abs(result2$estimate), "\n")
       # print(result2$estimate)
       # print(result2$magnitude)
-      
     }
     cat("------------------------------------\n")
+    # write.csv(paste(result$p.value, "", abs(result2$estimate), " \n"), file = "../myTable2.csv")
   }
 }
 

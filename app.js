@@ -1,6 +1,5 @@
 import fs from "fs";
 import { globby } from "globby";
-import path from "path";
 import Promise from "bluebird";
 
 const tools = ["ACCUMULO", "AMBARI", "OOZIE", "HADOOP", "JCR", "LUCENE", "CoreBench"]
@@ -14,7 +13,7 @@ function readFile(file) {
     });
 }
 
-function appendFile(file) {
+function appendFile(pathFile, data) {
     return new Promise((resolve, reject) => {
         fs.appendFile(pathFile, data, (error) => {
             if (error) return reject(error);
@@ -24,7 +23,7 @@ function appendFile(file) {
     });
 }
 
-function writeFile(file) {
+function writeFile(pathFile, data) {
     return new Promise((resolve, reject) => {
         fs.writeFile(pathFile, data, (error) => {
             if (error) return reject(error);
@@ -35,6 +34,7 @@ function writeFile(file) {
 }
 
 async function getCSVFiles(dir, fileName, fileType) {
+    console.log(`${dir}/*${fileName}${fileType ? `.${fileType}` : ""}`)
     return globby(`${dir}/*${fileName}${fileType ? `.${fileType}` : ""}`);
 };
 
@@ -57,8 +57,6 @@ async function analystFileCoverage(toolName) {
 
         const dataFile = await getCSVFiles(`./${toolName}`, "FileCoverage");
         const { header, content } = await getContentCSVFiles(dataFile[0], '\t');
-
-        // console.log({ header, content })
 
         let itemList = [];
 
@@ -110,17 +108,27 @@ async function analystFileCoverage(toolName) {
         return fixCoverdByInduced / itemList.length;
     } catch (err) {
         console.log(`${toolName}'s' File Coverage not found`)
+        return 0;
     }
 }
+
 
 async function analystFileCoverageAll() {
     console.log('------------------FILE COVERAGE------------------')
     let avarage = 0;
+    var dataAnalyst = []
     await Promise.each(tools, async (tool) => {
         const res = await analystFileCoverage(tool);
         avarage += res;
+        dataAnalyst.push(`${tool};${floatString(res)}`)
     })
-    console.log({ avarage: avarage / tools.length })
+
+    const avarageFinal = avarage / tools.length;
+
+    console.log({ avarage: avarageFinal })
+    dataAnalyst.push(`avarage;${floatString(avarageFinal)}`)
+
+    await writeFile('./myFileCoverage.csv', dataAnalyst.join('\n'))
 }
 
 async function analystLineCoverage(toolName, expected) {
@@ -179,7 +187,7 @@ async function analystLineCoverage(toolName, expected) {
 
         const ratio = expected ? expected / coverage : 1.0;
 
-        console.log({
+        const results = ({
             [toolName]: {
                 totalCoveredLine,
                 totalDirectCoverage,
@@ -193,18 +201,24 @@ async function analystLineCoverage(toolName, expected) {
                 "flowCoverMulTotal": totalDataFlowCoverage * coverageflow,
             }
         })
+
+        console.log(results)
+
+        return results;
     } catch (err) {
         console.log(`${toolName}'s' Line Coverage not found`)
+        return null;
     }
 }
 
-async function analystActionCoverage(toolName, expected) {
-    console.log('------------------ACTION COVERAGE------------------')
+async function analystActionCoverage(toolName, expected, type) {
+    console.log(`------------------ACTION COVERAGE ${type}------------------`)
     try {
         const dataFile = await getCSVFiles(`./${toolName}`, "ActionCoverage", 'txt');
         const { header, content } = await getContentCSVFiles(dataFile[0], '\t');
 
         let itemList = [];
+        const dataAnalyst = [];
 
         let obj = {};
 
@@ -220,7 +234,17 @@ async function analystActionCoverage(toolName, expected) {
                 "BugId": field[header.indexOf('BugId')],
             };
 
-            obj[item["Index"]] = [...obj[item["Index"]], item["Value"]]
+            if (type === 'Coverage') {
+                if (item["Type"] === type) {
+                    obj[item["Index"]] = [...obj[item["Index"]], item["Value"]]
+                }
+            } else if (type === 'InverseCoverage') {
+                if (item["Type"] === type) {
+                    obj[item["Index"]] = [...obj[item["Index"]], item["Value"]]
+                }
+            } else {
+                obj[item["Index"]] = [...obj[item["Index"]], item["Value"]]
+            }
 
             itemList.push(item)
         });
@@ -231,26 +255,62 @@ async function analystActionCoverage(toolName, expected) {
             }, 0) / obj[key].length
 
             console.log({ [`${tools[index]}`]: itemAverage })
-
+            dataAnalyst.push(`${tools[index]};${floatString(itemAverage)}`)
             return itemAverage;
         })
 
-        // console.log({
-            // obj
-        // })
+        // const averageAll = Object.keys(analystData).reduce(function (acc, cur) {
+        //     const sum = acc + cur;
+        //     return sum;
+        // }, 0) / analystData.length;
+
+        // dataAnalyst.push(`avarage,${averageAll}`)
+
+        await writeFile(`./myActionConverage${type}.csv`, dataAnalyst.join('\n'))
+
     } catch (err) {
         console.log(`${toolName}'s' Action Coverage not found: ${err}`)
+        return 0;
     }
 }
 
+
+// Line coverage calculations
 async function analystLineCoverageAll() {
     console.log('------------------LINE COVERAGE------------------')
     const expected = [0.598, 0.62, 0.67, 0.68, 0.69, 0.67, 0.6]
-    await Promise.each(tools, async (tool) => {
-        await analystLineCoverage(tool);
-    })
+    let dataAnalyst = [];
+    try {
+        await Promise.each(tools, async (tool) => {
+            const data = await analystLineCoverage(tool);
+            const coverage = data ? data[tool].coverage : 0;
+            const directCoverage = data ? data[tool].directCoverage : 0;
+            const coverageflow = data ? data[tool].coverageflow : 0;
+            let dataSpec = `${tool};${floatString(coverage)};${floatString(directCoverage)};${floatString(coverageflow)}`
+            dataAnalyst.push(dataSpec);
+        })
+
+        // const averageAll = dataAnalyst.reduce(function (acc, cur) {
+        //     const sum = acc + cur;
+        //     return sum;
+        // }, 0) / dataAnalyst.length;
+
+        // dataAnalyst.push(averageAll);
+
+        await writeFile(`./myLineCoverage.csv`, dataAnalyst.join('\n'))
+    } catch (err) {
+        console.log(err)
+    }
 }
 
+function floatString(string) {
+    return string.toString().replace('.', ',');
+}
+
+// Figure 1
 await analystFileCoverageAll();
+// Figure 4
 await analystLineCoverageAll();
-await analystActionCoverage(tools[0])
+// Figure 5
+await analystActionCoverage(tools[0], null, 'Coverage')
+await analystActionCoverage(tools[0], null, 'InverseCoverage')
