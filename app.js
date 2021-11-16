@@ -400,11 +400,29 @@ function floatString(string) {
   return string.toString().replace(".", ",");
 }
 
+// Table 1 is dataset
+
 // Figure 1
 await analystFileCoverageAll();
+
+// Figure 2 is a commit
+// Figure 3 is a commit
+
 // Figure 4
 await analystLineCoverageAll();
-// Figure 5
+
+// Figure 5 and figure 6
 await analystActionCoverage(tools[0], null, "Coverage");
 await analystActionCoverage(tools[0], null, "InverseCoverage");
+
+// Figure 7 is a commit
+
+// Table 2 is dataset and sync by Statistical
+// Figure 8 dunno
+
+// Table 3 is dataset
+
+// Figure 9
 await analystMAPOchihai();
+
+// Figure 10 is a commit
