@@ -1,6 +1,6 @@
 library(ggplot2)
 library(gridExtra)
-library(plotly)
+# library(plotly)
 library(effsize)
 
 statisticalTest <- function() {
